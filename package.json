@@ -1,0 +1,21 @@
+{
+  "name": "adbot",
+  "version": "1.0.0",
+  "description": "Discord bot that rewards Minecraft players for posting in-game ads, with screenshot duplicate-detection and an XP/leveling economy. A clone of the Lemonade bot.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "sharp": "^0.33.5",
+    "tesseract.js": "^5.1.1"
+  }
+}
