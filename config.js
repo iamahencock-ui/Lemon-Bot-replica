@@ -1,11 +1,11 @@
 // ---------------------------------------------------------------------------
 // config.js — all tunable knobs for the ad-reward bot.
-// Values mirror the Lemonade bot reverse-engineered from screenshots.
+// Tune these to taste — every knob is read from here, nothing is hard-coded.
 // Edit freely; nothing here is hard-coded elsewhere.
 // ---------------------------------------------------------------------------
 
 export const config = {
-  // Command prefix for message commands (Lemonade uses "!").
+  // Command prefix for message commands.
   prefix: "!",
 
   // --- Ad economy -----------------------------------------------------------
@@ -26,7 +26,7 @@ export const config = {
   dupeHammingThreshold: 5,
 
   // --- Full-screen check ----------------------------------------------------
-  // Lemonade demands the ENTIRE screen. A real desktop screenshot is large and
+  // We demand the ENTIRE screen. A real desktop screenshot is large and
   // has a monitor-like aspect ratio; a cropped chat box does not. Reject crops.
   minImageWidth: 1000,
   minImageHeight: 560,
@@ -64,13 +64,14 @@ export const config = {
   // Prefix for new ticket channel names (before the user's name).
   ticketNamePrefix: "ticket-",
   // Title/description on the panel posted by !setup.
-  panelTitle: "🍋 Get paid to advertise",
+  panelTitle: "🍄 Gnomeads — get paid to get gnoming!",
   panelDescription:
-    "Click the button below to open a private ticket. Inside, set your in-game " +
-    "name, see the ads you can run, and submit screenshots to earn XP and rewards.",
+    "Pop the button below to dig your own private burrow (ticket). Inside, plant " +
+    "your in-game gname, peek at the ads you can run, and send screenshots to earn " +
+    "XP and shiny rewards. Gnice and simple!",
   // Message shown at the top of every new ticket.
   ticketWelcome:
-    "Welcome! Type `!ign <your username>` to begin, then `!ad` to see the ads you can run.",
+    "Welcome gnome! 🍄 Type `!ign <your username>` to get rooted, then `!ad` to see what's worth gnoming about.",
 
   // --- Cooldown reminder ----------------------------------------------------
   // Ping the user in their ticket when the cooldown expires.
@@ -79,7 +80,7 @@ export const config = {
   // --- Payouts --------------------------------------------------------------
   // If a DC Treasury API token is configured (DC_API_TOKEN), !withdraw pays the
   // advertiser automatically in-game. This memo is attached to the transfer.
-  payoutMemo: "Lemonade ad payout for {ign}",
+  payoutMemo: "Gnomeads payout for {ign} — gnice work!",
 
   // Fallback when NO API token is set: !withdraw instead posts this command for
   // a human to run. {ign}/{amount} are filled in.

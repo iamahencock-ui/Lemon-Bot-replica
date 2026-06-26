@@ -116,7 +116,7 @@ function gcfg(guildId, key) {
 }
 
 client.once(Events.ClientReady, async (c) => {
-  console.log(`Logged in as ${c.user.tag}`);
+  console.log(`🍄 Gnomeads is gnoming — logged in as ${c.user.tag}`);
   initPayout();
   // Provision any servers the bot is already in but hasn't set up yet.
   for (const guild of c.guilds.cache.values()) {
@@ -194,8 +194,8 @@ async function handleSetup(msg) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("ticket_create")
-      .setLabel("Open a ticket")
-      .setEmoji("🎟️")
+      .setLabel("Dig a burrow")
+      .setEmoji("🍄")
       .setStyle(ButtonStyle.Success)
   );
   await msg.channel.send({ embeds: [embed], components: [row] });
@@ -213,7 +213,7 @@ async function openTicket(i) {
       .catch(() => null);
     if (stillThere) {
       return i.reply({
-        content: `You already have an open ticket: <#${existing.channel_id}>`,
+        content: `You've already got a burrow dug: <#${existing.channel_id}>`,
         ephemeral: true,
       });
     }
@@ -289,25 +289,25 @@ async function openTicket(i) {
   const p = config.prefix;
   const welcome = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle("🎟️ Ticket opened")
+    .setTitle("🍄 Your burrow is dug!")
     .setDescription(config.ticketWelcome)
     .addFields({
-      name: "📋 Commands",
+      name: "📋 Gnome commands",
       value: [
-        `\`${p}ign <name>\` — set your in-game name`,
-        `\`${p}ad\` — list the ads you can run`,
-        `\`${p}rewards\` — view the level reward table`,
-        `\`${p}balance\` — check your earnings`,
-        `\`${p}withdraw\` — cash out (resets since-last-withdraw)`,
-        `\`${p}close\` — close this ticket`,
+        `\`${p}ign <name>\` — plant your in-game gname`,
+        `\`${p}ad\` — see the ads worth gnoming`,
+        `\`${p}rewards\` — view the gnome rank rewards`,
+        `\`${p}balance\` — peek in your burrow`,
+        `\`${p}withdraw\` — dig out your earnings`,
+        `\`${p}close\` — fill in this burrow`,
         "",
-        "📸 After running the ad in-game, post a screenshot of the **entire screen** here to earn.",
+        "📸 After running an ad in-game, drop a screenshot of the **entire screen** here to earn. Gnice!",
       ].join("\n"),
     });
   const closeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("ticket_close")
-      .setLabel("Close ticket")
+      .setLabel("Fill in burrow")
       .setEmoji("🔒")
       .setStyle(ButtonStyle.Danger)
   );
@@ -318,7 +318,7 @@ async function openTicket(i) {
   });
 
   return i.reply({
-    content: `🎟️ Your ticket is ready: <#${channel.id}>`,
+    content: `🍄 Your burrow is ready: <#${channel.id}>`,
     ephemeral: true,
   });
 }
@@ -330,17 +330,17 @@ async function closeTicketBtn(i) {
   const isStaff = i.member?.permissions.has(PermissionFlagsBits.ManageGuild);
 
   if (!store.isTicketChannel(i.channel.id)) {
-    return i.reply({ content: "This isn't an open ticket.", ephemeral: true });
+    return i.reply({ content: "This isn't an open burrow.", ephemeral: true });
   }
   if (!isOwner && !isStaff) {
     return i.reply({
-      content: "Only the ticket owner or staff can close this.",
+      content: "Only the burrow's owner or staff can fill it in, gnome.",
       ephemeral: true,
     });
   }
 
   store.closeTicket(i.channel.id);
-  await i.reply({ content: "🔒 Closing this ticket in 5 seconds…" });
+  await i.reply({ content: "🔒 Filling in this burrow in 5 seconds… take it gnome!" });
   setTimeout(() => i.channel.delete().catch(() => {}), 5000);
 }
 
@@ -633,8 +633,8 @@ async function handleCommand(msg, cmd, rest) {
         .catch(() => {});
     }
     return msg.reply(
-      `✅ Ticket bound to **${ign}**!\n` +
-        `To get started, type \`${config.prefix}ad\` and copy-paste the command in-game, ` +
+      `✅ Rooted in as **${ign}**! Gnice to meet you.\n` +
+        `To get gnoming, type \`${config.prefix}ad\`, run one in-game, ` +
         `then send a screenshot of the **ENTIRE SCREEN** here or it won't count.`
     );
   }
@@ -656,20 +656,20 @@ async function handleCommand(msg, cmd, rest) {
     const target = mentioned && isStaff ? store.getUser(mentioned.id) : user;
     const who = mentioned && isStaff ? `**${mentioned.username}** — ` : "";
     if (mentioned && !isStaff) {
-      return msg.reply("You can only check your own balance.");
+      return msg.reply("You can only peek in your own burrow, gnome.");
     }
     return msg.reply(
-      `📊 ${who}Balance: **${config.currencySymbol}${target.balance.toLocaleString()}** · ` +
+      `📊 ${who}Burrow: **${config.currencySymbol}${target.balance.toLocaleString()}** · ` +
         `All-time: ${config.currencySymbol}${target.all_time_total.toLocaleString()} · ` +
-        `Ads: ${target.total_ads} · XP: ${target.xp}`
+        `Ads gnomed: ${target.total_ads} · XP: ${target.xp}`
     );
   }
 
   if (cmd === "withdraw") {
-    if (user.balance <= 0) return msg.reply("Nothing to withdraw.");
+    if (user.balance <= 0) return msg.reply("Your burrow's empty — gnothing to withdraw yet!");
     if (!user.ign) {
       return msg.reply(
-        `Set your in-game name first: \`${config.prefix}ign <your username>\``
+        `Plant your gname first: \`${config.prefix}ign <your username>\``
       );
     }
     const amount = user.balance;
@@ -683,16 +683,16 @@ async function handleCommand(msg, cmd, rest) {
       if (result.ok) {
         store.withdraw(msg.author.id); // only debit on confirmed success
         return msg.reply(
-          `✅ Paid **${money(amount)}** to **${ign}** in-game! ` +
+          `✅ Sent **${money(amount)}** straight to **${ign}** in-game — gnice doing business! ` +
             (result.txnId ? `(txn #${result.txnId})` : "")
         );
       }
       // Failure: leave the balance intact so nothing is lost.
       console.error("payout failed:", result);
       return msg.reply(
-        `⚠️ Payout failed: \`${result.error}\`${
+        `⚠️ Payout hit a snag: \`${result.error}\`${
           result.message ? ` — ${result.message}` : ""
-        }.\nYour balance is **unchanged**. Try again shortly or contact staff.`
+        }.\nYour balance is **unchanged**. Give it another go shortly or poke staff.`
       );
     }
 
@@ -723,7 +723,7 @@ async function handleCommand(msg, cmd, rest) {
     }
 
     return msg.reply(
-      `✅ Requested a payout of ${money(amount)} — staff have been pinged to pay **${ign}** in-game.`
+      `✅ Payout of ${money(amount)} requested — the gnomes have pinged staff to pay **${ign}** in-game.`
     );
   }
 
@@ -734,10 +734,10 @@ async function handleCommand(msg, cmd, rest) {
       PermissionFlagsBits.ManageGuild
     );
     if (!isOwner && !isStaff) {
-      return msg.reply("Only the ticket owner or staff can close this.");
+      return msg.reply("Only the burrow's owner or staff can fill this one in, gnome.");
     }
     store.closeTicket(msg.channel.id);
-    await msg.reply("🔒 Closing this ticket in 5 seconds…");
+    await msg.reply("🔒 Filling in this burrow in 5 seconds… take it gnome!");
     setTimeout(() => msg.channel.delete().catch(() => {}), 5000);
     return;
   }
@@ -745,12 +745,13 @@ async function handleCommand(msg, cmd, rest) {
   if (cmd === "help") {
     return msg.reply(
       [
-        `\`${config.prefix}ign <name>\` — bind your in-game name`,
-        `\`${config.prefix}ad\` — list the ads you can run`,
-        `\`${config.prefix}rewards\` — view the level reward table`,
-        `\`${config.prefix}balance\` — your earnings`,
-        `\`${config.prefix}withdraw\` — cash out (resets since-last-withdraw)`,
-        `\`${config.prefix}close\` — close this ticket`,
+        "🍄 **Gnomeads — here's the dig:**",
+        `\`${config.prefix}ign <name>\` — plant your in-game gname`,
+        `\`${config.prefix}ad\` — see the ads worth gnoming`,
+        `\`${config.prefix}rewards\` — view the gnome rank rewards`,
+        `\`${config.prefix}balance\` — peek in your burrow`,
+        `\`${config.prefix}withdraw\` — dig out your earnings`,
+        `\`${config.prefix}close\` — fill in this burrow`,
       ].join("\n")
     );
   }
@@ -764,7 +765,7 @@ async function handleSubmission(msg, att) {
 
   if (!user.ign) {
     return msg.reply(
-      `Set your in-game name first: \`${config.prefix}ign <your username>\``
+      `Plant your gname first: \`${config.prefix}ign <your username>\``
     );
   }
 
@@ -886,7 +887,7 @@ async function processSubmission(msg, att, user, now) {
   if (config.remindWhenCooldownEnds) {
     setTimeout(() => {
       msg.channel
-        .send(`⏰ <@${msg.author.id}> 10 minutes is up, time to post your next ad!`)
+        .send(`⏰ <@${msg.author.id}> cooldown's up — time to get gnoming again! 🍄`)
         .catch(() => {});
     }, config.cooldownMs);
   }

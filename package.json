@@ -1,7 +1,7 @@
 {
-  "name": "adbot",
+  "name": "gnomeads",
   "version": "1.0.0",
-  "description": "Discord bot that rewards Minecraft players for posting in-game ads, with screenshot duplicate-detection and an XP/leveling economy. A clone of the Lemonade bot.",
+  "description": "Gnomeads — a Discord bot that pays Minecraft players to get gnoming (run in-game ads), with screenshot OCR verification, duplicate detection, an XP/rank economy, and automatic DC Treasury payouts.",
   "type": "module",
   "main": "index.js",
   "scripts": {

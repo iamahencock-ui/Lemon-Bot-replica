@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
 // test.js — run with `npm test`. Verifies the level/XP math against the values
-// observed in the Lemonade screenshots, plus the perceptual-hash behaviour.
+// observed during testing, plus the perceptual-hash + matching behaviour.
 // ---------------------------------------------------------------------------
 import assert from "node:assert/strict";
 import {

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// embeds.js — builds the Discord embeds, styled after the Lemonade bot.
+// embeds.js — builds the Discord embeds for Gnomeads. Gnice and tidy.
 // ---------------------------------------------------------------------------
 import { EmbedBuilder } from "discord.js";
 import { config, LEVELS } from "./config.js";
@@ -25,34 +25,34 @@ export function adEmbed(user, result, { xpGain, adCash, bonusCash }) {
 
   const e = new EmbedBuilder()
     .setColor(leveled ? 0x57f287 : 0xf1c40f)
-    .setTitle(leveled ? "🆙 Level Up!" : "📸 Ad Recorded!")
+    .setTitle(leveled ? "🆙 Level up! Gnicely done!" : "🍄 Ad gnoted — gnice work!")
     .setDescription(
       [
-        `⭐ **Level:** ${levelText}`,
+        `⭐ **Gnome rank:** ${levelText}`,
         `${progressBar(p.pct)}  ${p.pct}%`,
         `${p.current} / ${p.needed} XP`,
         "",
-        `🎁 **Next Bonus:** ${
-          p.atMax ? "— (max level)" : cur(nextBonus(user.xp))
+        `🎁 **Next bonus:** ${
+          p.atMax ? "— (top of the toadstool)" : cur(nextBonus(user.xp))
         }`,
         "",
         "⏰ **SINCE LAST WITHDRAW:**",
-        `💰 Earned from Ads: ${cur(user.earned_ads)}${delta(adCash)}`,
-        `🎉 Earned from Bonus: ${cur(user.earned_bonus)}${delta(bonusCash)}`,
-        `📊 Account balance: ${cur(user.balance)}${delta(adCash + bonusCash)}`,
+        `💰 Earned from ads: ${cur(user.earned_ads)}${delta(adCash)}`,
+        `🎉 Earned from bonuses: ${cur(user.earned_bonus)}${delta(bonusCash)}`,
+        `📊 Burrow balance: ${cur(user.balance)}${delta(adCash + bonusCash)}`,
         "",
-        `📅 All-Time Total: ${cur(user.all_time_total)}`,
-        `🦮 Total Ads: ${user.total_ads} (${user.xp} XP)`,
+        `📅 All-time total: ${cur(user.all_time_total)}`,
+        `🍄 Ads gnomed: ${user.total_ads} (${user.xp} XP)`,
       ].join("\n")
     );
 
   if (result.grantedStaffRole) {
     e.addFields({
-      name: "🎖️ Staff reward",
-      value: "You reached the staff level and earned the staff role!",
+      name: "🎖️ Gnoble promotion!",
+      value: "You've climbed to staff rank and earned the gnome staff role!",
     });
   }
-  if (user.ign) e.setFooter({ text: `IGN: ${user.ign}` });
+  if (user.ign) e.setFooter({ text: `Gname: ${user.ign}` });
   return e;
 }
 
@@ -60,26 +60,26 @@ export function adEmbed(user, result, { xpGain, adCash, bonusCash }) {
 export function rewardsEmbed(user) {
   const myLevel = levelForXp(user.xp);
 
-  const fmtReward = (r) => (r === "STAFF_ROLE" ? "Staff role + 🎖️" : cur(r));
+  const fmtReward = (r) => (r === "STAFF_ROLE" ? "Gnome staff role + 🎖️" : cur(r));
 
   const lines = (rows) =>
     rows
       .map((r) => {
-        const here = r.level === myLevel ? "  ⬅️ **You are here**" : "";
-        return `**Lvl ${r.level}** (${r.xp} XP) — ${fmtReward(r.reward)}${here}`;
+        const here = r.level === myLevel ? "  ⬅️ **You're gnesting here**" : "";
+        return `**Rank ${r.level}** (${r.xp} XP) — ${fmtReward(r.reward)}${here}`;
       })
       .join("\n");
 
   const e = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle("🎁 Level Rewards")
-    .setDescription(`Your current level: **${myLevel}**`);
+    .setTitle("🎁 Gnome rewards")
+    .setDescription(`Your current rank: **${myLevel}**`);
 
   // Chunk into fields of 10 to stay under embed limits.
   for (let i = 0; i < LEVELS.length; i += 10) {
     const chunk = LEVELS.slice(i, i + 10);
     e.addFields({
-      name: `Levels ${chunk[0].level}–${chunk[chunk.length - 1].level}`,
+      name: `Ranks ${chunk[0].level}–${chunk[chunk.length - 1].level}`,
       value: lines(chunk),
     });
   }
@@ -90,12 +90,12 @@ export function rewardsEmbed(user) {
 export function flaggedEmbed(match) {
   return new EmbedBuilder()
     .setColor(0xed4245)
-    .setTitle("🚫 Duplicate screenshot flagged")
+    .setTitle("🚫 Gnope — I've seen this one")
     .setDescription(
       [
-        "That screenshot matches one already submitted, so it wasn't counted.",
+        "That screenshot matches one already submitted, so no gnome points this time.",
         `Match distance: \`${match.distance}\` bit(s) (threshold ${config.dupeHammingThreshold}).`,
-        "Post a **fresh** screenshot of your ad showing the entire screen.",
+        "Send a **fresh** screenshot of your ad showing the whole screen.",
       ].join("\n")
     );
 }
@@ -104,19 +104,19 @@ export function flaggedEmbed(match) {
 export function notFullScreenEmbed(reason) {
   return new EmbedBuilder()
     .setColor(0xed4245)
-    .setTitle("🖼️ Screenshot rejected")
-    .setDescription(`Send a screenshot of the **entire screen** — ${reason}`);
+    .setTitle("🖼️ Gnot the whole screen")
+    .setDescription(`I need a screenshot of the **entire screen**, gnome — ${reason}`);
 }
 
 // The screenshot didn't match any running ad.
 export function adNotFoundEmbed() {
   return new EmbedBuilder()
     .setColor(0xed4245)
-    .setTitle("🚫 Ad didn't match")
+    .setTitle("🚫 That ad doesn't ring a gnell")
     .setDescription(
       "That screenshot doesn't match any of the **currently running ads**.\n" +
-        "Run `!ad` to see the exact text, paste one into `/ad` in-game, wait for the " +
-        "**AD »** broadcast to appear, then screenshot the **whole screen** showing it."
+        "Run `!ad` to grab the exact text, paste one into `/ad` in-game, wait for the " +
+        "**AD »** broadcast to pop up, then screenshot the **whole screen** showing it. Gnice and clear!"
     );
 }
 
@@ -124,9 +124,9 @@ export function adNotFoundEmbed() {
 export function ignMissingEmbed() {
   return new EmbedBuilder()
     .setColor(0xed4245)
-    .setTitle("🚫 IGN not found")
+    .setTitle("🚫 Can't spot your gname")
     .setDescription(
-      "I matched the ad, but couldn't see your in-game name in the screenshot. " +
+      "I matched the ad, but couldn't see your in-game gname in the screenshot. " +
         "Make sure the **AD »** line (which ends with your username) is fully visible."
     );
 }
@@ -135,9 +135,9 @@ export function ignMissingEmbed() {
 export function adsListEmbed(ads) {
   const e = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle("📢 Currently running ads")
+    .setTitle("📢 Ads worth gnoming about")
     .setDescription(
-      "Copy one of these, run it in-game with `/ad`, then screenshot the whole screen here."
+      "Grab one of these, run it in-game with `/ad`, then screenshot the whole screen here. Get gnoming!"
     );
   for (const ad of ads.slice(0, 25)) {
     e.addFields({ name: `Ad #${ad.id}`, value: "```\n" + ad.text + "\n```" });
@@ -149,17 +149,17 @@ export function adsListEmbed(ads) {
 export function noAdsEmbed() {
   return new EmbedBuilder()
     .setColor(0xfee75c)
-    .setTitle("📭 No ads running")
-    .setDescription("There are no ads to run right now. Check back soon!");
+    .setTitle("📭 Gnothing to gnome right now")
+    .setDescription("No ads are sprouting at the moment. Check back soon — the garden's growing!");
 }
 
 // Too many submissions queued — ask the user to retry shortly.
 export function busyEmbed() {
   return new EmbedBuilder()
     .setColor(0xfee75c)
-    .setTitle("⏳ I'm a bit busy")
+    .setTitle("⏳ The gnomes are swamped")
     .setDescription(
-      "Lots of submissions are being checked right now. Wait a minute and post your screenshot again — your cooldown won't be affected."
+      "Lots of screenshots are being checked right now. Give it a minute and post yours again — your cooldown won't budge."
     );
 }
 
@@ -167,9 +167,9 @@ export function busyEmbed() {
 export function unreadableEmbed() {
   return new EmbedBuilder()
     .setColor(0xed4245)
-    .setTitle("🔍 Couldn't read that screenshot")
+    .setTitle("🔍 Can't make heads or tails of it")
     .setDescription(
-      "The image was too blurry or small to read. Send a clear, full-screen capture and try again."
+      "That image was too blurry or tiny for the gnomes to read. Send a clear, full-screen capture and try again."
     );
 }
 
@@ -179,6 +179,6 @@ export function cooldownEmbed(msLeft) {
   const secs = Math.ceil((msLeft % 60000) / 1000);
   return new EmbedBuilder()
     .setColor(0xfee75c)
-    .setTitle("⏳ Slow down!")
-    .setDescription(`You can post your next ad in **${mins}m ${secs}s**.`);
+    .setTitle("⏳ Take it gnome and slow")
+    .setDescription(`Your next ad can sprout in **${mins}m ${secs}s**.`);
 }

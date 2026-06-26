@@ -1,10 +1,12 @@
-# Ad-Reward Bot (Lemonade clone)
+# 🍄 Gnomeads
 
-A Discord bot that pays Minecraft players for posting in-game ads. Players bind
-their IGN, grab a copy-paste `/ad` command, run it in-game, and submit a
-full-screen screenshot. The bot verifies the screenshot (size + perceptual
-duplicate check), then awards XP and in-game currency on a leveling curve with
-milestone bonuses — a faithful clone of the Lemonade bot's mechanics.
+A Discord bot that pays Minecraft players to **get gnoming** — run in-game ads
+and get rewarded. Players plant their gname, grab an ad from the running list,
+run it in-game, and submit a full-screen screenshot. The bot verifies it
+(full-screen check, perceptual duplicate detection, and OCR matching against the
+stored ads), then awards XP and in-game currency on a rank curve with milestone
+bonuses, and can pay out automatically via the DemocracyCraft Treasury API.
+Original gnome flavour throughout. Gnice day!
 
 ## The loop
 

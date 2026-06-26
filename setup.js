@@ -45,17 +45,17 @@ export async function ensureGuildSetup(guild, client) {
   if (canRoles) {
     cfg.staffRoleId = await mk(() =>
       guild.roles.create({
-        name: "Ad Staff",
+        name: "Head Gnome",
         color: 0xf1c40f,
-        reason: "Ad bot setup",
+        reason: "Gnomeads setup",
       })
     );
     cfg.payoutRoleId = await mk(() =>
       guild.roles.create({
-        name: "Payer",
+        name: "Paygnome",
         color: 0x2ecc71,
         mentionable: true,
-        reason: "Ad bot setup",
+        reason: "Gnomeads setup",
       })
     );
   }
@@ -64,7 +64,7 @@ export async function ensureGuildSetup(guild, client) {
   if (canChannels) {
     cfg.ticketCategoryId = await mk(() =>
       guild.channels.create({
-        name: "Tickets",
+        name: "Burrows",
         type: ChannelType.GuildCategory,
       })
     );
@@ -77,7 +77,7 @@ export async function ensureGuildSetup(guild, client) {
 
     cfg.payoutChannelId = await mk(() =>
       guild.channels.create({
-        name: "payout-requests",
+        name: "gnome-payouts",
         type: ChannelType.GuildText,
         permissionOverwrites: cfg.payoutRoleId
           ? [...staffOnly, { id: cfg.payoutRoleId, allow: [V, S, R] }]
@@ -87,16 +87,16 @@ export async function ensureGuildSetup(guild, client) {
 
     cfg.flagLogChannelId = await mk(() =>
       guild.channels.create({
-        name: "flagged-submissions",
+        name: "flagged-gnomes",
         type: ChannelType.GuildText,
         permissionOverwrites: staffOnly,
       })
     );
 
-    // Public channel with the "open a ticket" panel.
+    // Public channel with the "dig a burrow" panel.
     const panelChannelId = await mk(() =>
       guild.channels.create({
-        name: "advertise-here",
+        name: "get-gnoming",
         type: ChannelType.GuildText,
       })
     );
@@ -125,8 +125,8 @@ export async function postPanel(channel) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("ticket_create")
-      .setLabel("Open a ticket")
-      .setEmoji("🎟️")
+      .setLabel("Dig a burrow")
+      .setEmoji("🍄")
       .setStyle(ButtonStyle.Success)
   );
   return channel.send({ embeds: [embed], components: [row] });
@@ -150,19 +150,19 @@ async function notifyOwner(guild, cfg) {
     id ? `• ${label}: ${type === "ch" ? `<#${id}>` : `<@&${id}>`}` : `• ${label}: ⚠️ not created (missing permission)`;
   const embed = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle(`✅ Ad bot set up in ${guild.name}`)
+    .setTitle(`🍄 Gnomeads has set up shop in ${guild.name}!`)
     .setDescription(
       [
-        "I created everything I need:",
-        line("Staff role", cfg.staffRoleId),
-        line("Payout ping role", cfg.payoutRoleId),
+        "The gnomes dug everything they need:",
+        line("Head Gnome role", cfg.staffRoleId),
+        line("Paygnome ping role", cfg.payoutRoleId),
         line("Payout channel", cfg.payoutChannelId, "ch"),
         line("Flag log", cfg.flagLogChannelId, "ch"),
-        line("Ticket panel", cfg.panelChannelId, "ch"),
+        line("Burrow panel", cfg.panelChannelId, "ch"),
         "",
-        "**Next step:** add the ads people can run with " +
+        "**Next step:** plant the ads people can run with " +
           "`!addad <full ad text>`, then `!listads` to check them. " +
-          "Run `!adminhelp` for everything else.",
+          "Run `!adminhelp` for the full gnome toolkit. Gnice day!",
       ].join("\n")
     );
   await owner.send({ embeds: [embed] });
