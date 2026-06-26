@@ -44,9 +44,12 @@ export const config = {
   // forgiven via a small edit-distance allowance.
   adMatchThreshold: 0.6,
   adWordMinLen: 3, // ignore tiny words ("or", "at") when matching
-  // Also require the submitter's IGN to appear (ties the ad to this person).
-  // Turn off if OCR keeps failing to read usernames.
-  requireIgnInScreenshot: true,
+  // Require the submitter's IGN to also appear in the screenshot. OFF by
+  // default: usernames are small/low-contrast and the most error-prone thing
+  // for OCR, so requiring them causes false rejections. The ad-text match,
+  // duplicate check, and full-screen check already prove a real, unique
+  // broadcast. Turn this on only if your screenshots reliably show the name.
+  requireIgnInScreenshot: false,
 
   // --- Tickets --------------------------------------------------------------
   // When set, !ign renames the ticket channel to the user's IGN.

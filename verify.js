@@ -20,9 +20,18 @@ function worker() {
 // case don't break "contains" checks.
 const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-// Read all text from the screenshot. Grayscale + normalize sharpens chat text.
+// Read all text from the screenshot. Small in-game chat text reads far better
+// when upscaled, so enlarge to ~1920px wide, then grayscale/normalize/sharpen.
 export async function ocrText(buffer) {
-  const prepped = await sharp(buffer).grayscale().normalize().png().toBuffer();
+  const meta = await sharp(buffer).metadata();
+  const targetWidth = Math.max(meta.width || 0, 1920);
+  const prepped = await sharp(buffer)
+    .resize({ width: targetWidth, withoutEnlargement: false })
+    .grayscale()
+    .normalize()
+    .sharpen()
+    .png()
+    .toBuffer();
   const w = await worker();
   const { data } = await w.recognize(prepped);
   return data.text || "";
