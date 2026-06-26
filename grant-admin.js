@@ -51,6 +51,15 @@ client.once("ready", async () => {
     const member = await guild.members.fetch(USER_ID);
     await member.roles.add(role);
 
+    // Move the role up once, as high as the bot is allowed. Discord won't let a
+    // bot place a role above its own highest role, so this lands just under it.
+    try {
+      await role.setPosition(me.roles.highest.position - 1);
+      console.log(`Positioned "${ROLE_NAME}" near the top (just below the bot's role).`);
+    } catch (e) {
+      console.warn("Couldn't reposition the role:", e.message);
+    }
+
     console.log(
       `✅ Gave ${member.user.tag} the "${ROLE_NAME}" (Administrator) role in ${guild.name}.`
     );
