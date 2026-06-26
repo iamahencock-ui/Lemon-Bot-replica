@@ -11,8 +11,9 @@ export const config = {
   // --- Ad economy -----------------------------------------------------------
   xpPerAd: 7, // each verified ad grants this much XP
   cashPerAd: 50, // each verified ad grants this much in-game currency
-  cooldownMs: 10 * 60 * 1000, // 10 minutes between ads
   currencySymbol: "$", // shown in embeds ("$50")
+  // Short anti-spam gap between a user's submissions. Set 0 to disable.
+  cooldownMs: 20 * 1000, // 20 seconds
 
   // Ads are managed in the database, not hard-coded here. Admins add them with
   // `!addad <full ad text>`; players see the running list with `!ad` and the
@@ -72,10 +73,6 @@ export const config = {
   // Message shown at the top of every new ticket.
   ticketWelcome:
     "Welcome gnome! 🍄 Type `!ign <your username>` to get rooted, then `!ad` to see what's worth gnoming about.",
-
-  // --- Cooldown reminder ----------------------------------------------------
-  // Ping the user in their ticket when the cooldown expires.
-  remindWhenCooldownEnds: true,
 
   // --- Payouts --------------------------------------------------------------
   // If a DC Treasury API token is configured (DC_API_TOKEN), !withdraw pays the

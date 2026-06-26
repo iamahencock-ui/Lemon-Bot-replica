@@ -40,6 +40,7 @@ import {
   unreadableEmbed,
   busyEmbed,
   adsListEmbed,
+  adFullEmbed,
   noAdsEmbed,
   cooldownEmbed,
 } from "./embeds.js";
@@ -364,6 +365,8 @@ const ADMIN_COMMANDS = new Set([
   "removead",
   "togglead",
   "listads",
+  "setcap",
+  "refill",
   // maintenance
   "clearcache",
   "payoutinfo",
@@ -392,7 +395,9 @@ async function handleAdmin(msg, cmd, rest) {
         "",
         "**Ad list:**",
         `\`${config.prefix}addad <full ad text>\` — add a running ad`,
-        `\`${config.prefix}listads\` — show all ads (id + on/off)`,
+        `\`${config.prefix}setcap <id> <total runs>\` — paid run limit (0 = unlimited)`,
+        `\`${config.prefix}refill <id>\` — reset an ad's used-run count to 0`,
+        `\`${config.prefix}listads\` — show all ads (id, on/off, runs used)`,
         `\`${config.prefix}togglead <id>\` — turn an ad on/off`,
         `\`${config.prefix}removead <id>\` — delete an ad`,
         "",
@@ -475,15 +480,48 @@ async function handleAdmin(msg, cmd, rest) {
       );
     }
     const ad = store.addAd(text, msg.author.id);
-    return msg.reply(`✅ Added ad **#${ad.id}** (active).`);
+    return msg.reply(
+      `✅ Added ad **#${ad.id}** (active, unlimited runs). ` +
+        `Set a paid limit with \`${config.prefix}setcap ${ad.id} <total runs>\`.`
+    );
+  }
+
+  if (cmd === "setcap") {
+    const id = Number.parseInt(rest[0] ?? "", 10);
+    const cap = Number.parseInt(rest[1] ?? "", 10);
+    if (Number.isNaN(id) || Number.isNaN(cap)) {
+      return msg.reply(
+        `Usage: \`${config.prefix}setcap <ad id> <total runs>\` (use 0 for unlimited).`
+      );
+    }
+    const ad = store.setAdCap(id, cap);
+    if (!ad) return msg.reply(`No ad with id ${id}.`);
+    return msg.reply(
+      cap > 0
+        ? `✅ Ad **#${id}** is capped at **${cap}** total runs (${ad.runs || 0} used, ${Math.max(0, cap - (ad.runs || 0))} left).`
+        : `✅ Ad **#${id}** is now **unlimited**.`
+    );
+  }
+
+  if (cmd === "refill") {
+    const id = Number.parseInt(rest[0] ?? "", 10);
+    if (Number.isNaN(id)) {
+      return msg.reply(`Usage: \`${config.prefix}refill <ad id>\``);
+    }
+    const ad = store.refillAd(id);
+    if (!ad) return msg.reply(`No ad with id ${id}.`);
+    return msg.reply(
+      `✅ Reset ad **#${id}**'s run count to 0 — ${ad.cap > 0 ? `**${ad.cap}** runs available again` : "it's unlimited anyway"}.`
+    );
   }
 
   if (cmd === "listads") {
     const all = store.listAds(false);
     if (!all.length) return msg.reply("No ads yet. Add one with `!addad`.");
-    const lines = all.map(
-      (a) => `**#${a.id}** ${a.active ? "🟢" : "⚪️"} — ${a.text}`
-    );
+    const lines = all.map((a) => {
+      const cap = a.cap > 0 ? ` · ${a.runs || 0}/${a.cap} runs` : " · ∞";
+      return `**#${a.id}** ${a.active ? "🟢" : "⚪️"}${cap} — ${a.text}`;
+    });
     return msg.reply(lines.join("\n").slice(0, 1900));
   }
 
@@ -640,7 +678,7 @@ async function handleCommand(msg, cmd, rest) {
   }
 
   if (cmd === "ad") {
-    const ads = store.listAds(true);
+    const ads = store.listAds(true).filter(store.adHasQuota);
     if (!ads.length) return msg.reply({ embeds: [noAdsEmbed()] });
     return msg.reply({ embeds: [adsListEmbed(ads)] });
   }
@@ -770,8 +808,9 @@ async function handleSubmission(msg, att) {
   }
 
   const now = Date.now();
+  // Short anti-spam gap between submissions (config.cooldownMs, 0 = off).
   const elapsed = now - user.last_ad_at;
-  if (user.last_ad_at && elapsed < config.cooldownMs) {
+  if (config.cooldownMs > 0 && user.last_ad_at && elapsed < config.cooldownMs) {
     return msg.reply({ embeds: [cooldownEmbed(config.cooldownMs - elapsed)] });
   }
 
@@ -844,12 +883,17 @@ async function processSubmission(msg, att, user, now) {
   if (config.requireIgnInScreenshot && !ignPresent(text, user.ign)) {
     return msg.reply({ embeds: [ignMissingEmbed()] });
   }
+  // Daily cap: if this ad has run out its paid quota for today, don't count it.
+  if (!store.adHasQuota(match.ad)) {
+    return msg.reply({ embeds: [adFullEmbed()] });
+  }
   console.log(
     `Ad #${match.ad.id} matched for ${user.ign} ` +
       `(${match.matched}/${match.total} words, ${(match.score * 100).toFixed(0)}%)`
   );
 
   store.saveHash(msg.author.id, hash, msg.id, now);
+  store.recordAdRun(match.ad.id); // count this run against the ad's cap
   const prevLevel = levelForXp(user.xp);
   store.recordAdReward({
     discordId: msg.author.id,
@@ -883,14 +927,6 @@ async function processSubmission(msg, att, user, now) {
       }),
     ],
   });
-
-  if (config.remindWhenCooldownEnds) {
-    setTimeout(() => {
-      msg.channel
-        .send(`⏰ <@${msg.author.id}> cooldown's up — time to get gnoming again! 🍄`)
-        .catch(() => {});
-    }, config.cooldownMs);
-  }
 }
 
 // Optional health endpoint. Some hosts (incl. panel-based ones like HeavenCloud)

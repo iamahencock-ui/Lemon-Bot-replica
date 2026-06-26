@@ -140,9 +140,26 @@ export function adsListEmbed(ads) {
       "Grab one of these, run it in-game with `/ad`, then screenshot the whole screen here. Get gnoming!"
     );
   for (const ad of ads.slice(0, 25)) {
-    e.addFields({ name: `Ad #${ad.id}`, value: "```\n" + ad.text + "\n```" });
+    const left =
+      ad.cap > 0
+        ? `  ·  ${Math.max(0, ad.cap - (ad.runs || 0))} runs left`
+        : "";
+    e.addFields({
+      name: `Ad #${ad.id}${left}`,
+      value: "```\n" + ad.text + "\n```",
+    });
   }
   return e;
+}
+
+// A matched ad has used up its paid runs.
+export function adFullEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xfee75c)
+    .setTitle("🍄 That ad's all gnomed out")
+    .setDescription(
+      "This ad has used up all its paid runs, so it won't earn right now. Grab a different one from `!ad`!"
+    );
 }
 
 // !ad — when there's nothing to advertise yet.
@@ -159,7 +176,7 @@ export function busyEmbed() {
     .setColor(0xfee75c)
     .setTitle("⏳ The gnomes are swamped")
     .setDescription(
-      "Lots of screenshots are being checked right now. Give it a minute and post yours again — your cooldown won't budge."
+      "Lots of screenshots are being checked right now. Give it a minute and post yours again."
     );
 }
 
@@ -173,12 +190,12 @@ export function unreadableEmbed() {
     );
 }
 
-// Cooldown still active.
+// Short anti-spam cooldown still active.
 export function cooldownEmbed(msLeft) {
-  const mins = Math.floor(msLeft / 60000);
-  const secs = Math.ceil((msLeft % 60000) / 1000);
+  const total = Math.ceil(msLeft / 1000);
+  const t = total >= 60 ? `${Math.floor(total / 60)}m ${total % 60}s` : `${total}s`;
   return new EmbedBuilder()
     .setColor(0xfee75c)
-    .setTitle("⏳ Take it gnome and slow")
-    .setDescription(`Your next ad can sprout in **${mins}m ${secs}s**.`);
+    .setTitle("⏳ Easy there, gnome!")
+    .setDescription(`Catch your breath — your next ad in **${t}**.`);
 }

@@ -200,6 +200,20 @@ export function setGuildConfig(guildId, fields) {
 }
 
 // --- Ads (the running ad list) ---------------------------------------------
+// `cap` = total runs the client paid for (0 = unlimited). `runs` = used so far.
+// The cap does NOT auto-reset; staff top it up with !refill or change !setcap.
+function normalizeAd(ad) {
+  // Migrate from the old daily-reset fields if present.
+  if (ad.cap === undefined) ad.cap = ad.dailyCap ?? 0;
+  if (ad.runs === undefined) ad.runs = ad.runsToday ?? 0;
+}
+
+// Does this ad still have quota left? cap 0/undefined = unlimited.
+export function adHasQuota(ad) {
+  normalizeAd(ad);
+  return !ad.cap || ad.runs < ad.cap;
+}
+
 export function addAd(text, createdBy) {
   const ad = {
     id: data.nextAdId++,
@@ -207,6 +221,8 @@ export function addAd(text, createdBy) {
     active: true,
     created_by: createdBy,
     created_at: Date.now(),
+    cap: 0, // 0 = unlimited total runs
+    runs: 0,
   };
   data.ads.push(ad);
   save();
@@ -229,7 +245,38 @@ export function setAdActive(id, active) {
   return ad;
 }
 
+// Set an ad's total run cap (0 = unlimited).
+export function setAdCap(id, cap) {
+  const ad = data.ads.find((a) => a.id === id);
+  if (!ad) return null;
+  normalizeAd(ad);
+  ad.cap = Math.max(0, cap);
+  save();
+  return ad;
+}
+
+// Reset an ad's used-run counter to 0 (e.g. the client bought another batch).
+export function refillAd(id) {
+  const ad = data.ads.find((a) => a.id === id);
+  if (!ad) return null;
+  normalizeAd(ad);
+  ad.runs = 0;
+  save();
+  return ad;
+}
+
+// Count one accepted run against an ad's cap.
+export function recordAdRun(id) {
+  const ad = data.ads.find((a) => a.id === id);
+  if (!ad) return null;
+  normalizeAd(ad);
+  ad.runs = (ad.runs || 0) + 1;
+  save();
+  return ad;
+}
+
 export function listAds(activeOnly = false) {
+  for (const a of data.ads) normalizeAd(a);
   return activeOnly ? data.ads.filter((a) => a.active) : data.ads.slice();
 }
 

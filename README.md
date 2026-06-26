@@ -13,11 +13,9 @@ Original gnome flavour throughout. Gnice day!
 ```
 !ign <name>   →   !ad   →   run /ad in-game   →   post full-screen screenshot
                                                       │
-                                       verify size + dedupe (dHash)
+                                  verify full-screen + dedupe + OCR match
                                                       │
                                    +7 XP, +$50, level-up bonuses → embed
-                                                      │
-                                        10-min cooldown → reminder ping
 ```
 
 ## Setup
@@ -135,7 +133,7 @@ Debian/Ubuntu-based Node egg instead.
 
 Everything tunable lives in **`config.js`**:
 
-- `xpPerAd` (7), `cashPerAd` (50), `cooldownMs` (10 min)
+- `xpPerAd` (7), `cashPerAd` (50)
 - `adCommand` — **change this to your own shop's ad text**
 - `dupeHammingThreshold` (5) — how aggressively to flag duplicate screenshots
 - `minImageWidth/Height` — rejects low-effort crops (enforces "entire screen")
@@ -166,8 +164,8 @@ channel IDs are optional thanks to first-run auto-setup.
 staff) with a **Close ticket** button. Every command and screenshot submission
 **only works inside a ticket channel** — they're ignored anywhere else.
 
-Posting an **image attachment** in a ticket (with an IGN set, off cooldown)
-counts as an ad submission.
+Posting an **image attachment** in a ticket (with an IGN set) counts as an ad
+submission.
 
 ### Admin commands
 
@@ -184,8 +182,10 @@ target user. Run `!adminhelp` in Discord for the live list.
 | `!addads @user <n>` / `!setads @user <n>` | Adjust ad count |
 | `!resetuser @user` | Wipe their stats |
 | `!userinfo @user` | Show their full record |
-| `!addad <full ad text>` | Add an ad to the running list |
-| `!listads` | List all ads with id + on/off state |
+| `!addad <full ad text>` | Add an ad to the running list (unlimited runs by default) |
+| `!setcap <id> <total runs>` | Total run cap for an ad (0 = unlimited). Once used up, the ad hides from `!ad` and stops earning. Does **not** auto-reset |
+| `!refill <id>` | Reset an ad's used-run count to 0 (e.g. the client bought another batch) |
+| `!listads` | List all ads with id, on/off state, and runs used (e.g. `3/10 runs`) |
 | `!togglead <id>` | Turn an ad on or off |
 | `!removead <id>` | Delete an ad |
 | `!clearcache` | Clear the duplicate-screenshot cache (add `@user` to clear just one person) |
