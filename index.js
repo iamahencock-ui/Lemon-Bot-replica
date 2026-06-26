@@ -367,6 +367,7 @@ const ADMIN_COMMANDS = new Set([
   // maintenance
   "clearcache",
   "payoutinfo",
+  "resetup",
 ]);
 
 const money = (n) => `${config.currencySymbol}${n.toLocaleString()}`;
@@ -398,11 +399,22 @@ async function handleAdmin(msg, cmd, rest) {
         "**Maintenance:**",
         `\`${config.prefix}clearcache\` — clear the duplicate-screenshot cache (add \`@user\` for just one person)`,
         `\`${config.prefix}payoutinfo\` — show your DC token scope + the account ids you can pay from`,
+        `\`${config.prefix}resetup\` — re-run first-time setup (recreates roles/channels)`,
       ].join("\n")
     );
   }
 
   // --- Maintenance (no target user) ----------------------------------------
+  if (cmd === "resetup") {
+    store.setGuildConfig(msg.guild.id, { configured: false });
+    await msg.reply("🔧 Re-running first-time setup…");
+    await ensureGuildSetup(msg.guild, client);
+    return msg.reply(
+      "✅ Setup re-run. New roles/channels were created and saved. " +
+        "Old ones aren't deleted — remove any duplicates you don't want."
+    );
+  }
+
   if (cmd === "payoutinfo") {
     if (!payoutEnabled()) {
       return msg.reply(
