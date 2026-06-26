@@ -68,6 +68,20 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
+// --- TEMPORARY connection diagnostics (remove once it's logging in) ---------
+client.on("debug", (m) => console.log("[debug]", m));
+client.on("warn", (m) => console.warn("[warn]", m));
+client.on("error", (e) => console.error("[client error]", e));
+client.on("shardError", (e) => console.error("[shard error]", e));
+setTimeout(() => {
+  if (!client.isReady()) {
+    console.error(
+      "⚠️ Still not ready after 30s — the gateway isn't completing the handshake."
+    );
+  }
+}, 30000);
+// ----------------------------------------------------------------------------
+
 const IMAGE_RE = /\.(png|jpe?g|webp|gif)$/i;
 const isImage = (att) =>
   (att.contentType && att.contentType.startsWith("image/")) ||
