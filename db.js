@@ -179,6 +179,15 @@ export function clearUserHashes(discordId) {
   return n;
 }
 
+// --- DC Treasury API token (auto-rotated) ----------------------------------
+export function getApiToken() {
+  return data.apiToken || null;
+}
+export function setApiToken(token) {
+  data.apiToken = token;
+  save();
+}
+
 // --- Per-guild config (set by the first-run setup) -------------------------
 export function getGuildConfig(guildId) {
   return data.guilds[guildId] ?? {};

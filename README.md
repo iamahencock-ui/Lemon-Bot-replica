@@ -37,6 +37,31 @@ milestone bonuses — a faithful clone of the Lemonade bot's mechanics.
 
 Node 18+ required (uses global `fetch`).
 
+## Auto-payout (DemocracyCraft Treasury API)
+
+`!withdraw` can pay advertisers **automatically in-game** using DemocracyCraft's
+Treasury REST API (`POST /api/v1/transfers/to-player`). To enable it:
+
+1. **Issue an API token in-game.** Run `/treasuryapi business issue` (recommended
+   for a firm) or `/treasuryapi personal issue`. Copy the JWT it gives you.
+2. **Find the source account id** the payouts come from. For a firm token, call
+   `GET /economy/api/v1/firms/me/accounts` with the token (or check in-game) and
+   note the `accountId` of the account that holds your payout funds.
+3. **Add to `.env`:**
+   ```
+   DC_API_TOKEN=<the JWT>
+   DC_FROM_ACCOUNT_ID=<the firm account id>      # omit for a personal token
+   # DC_API_BASE=https://api.democracycraft.net/economy   # default, rarely changed
+   ```
+
+With a token set, `!withdraw` debits that account, pays the player by username,
+and only clears their balance on a confirmed success (failures leave the balance
+untouched). Each transfer uses an idempotency key, so retries never double-pay.
+The token is **auto-rotated** before it expires and the new one is saved to
+`adbot.json` — so keep that on a persistent volume (see Railway notes). If the
+token is missing/expired, `!withdraw` falls back to pinging staff with the
+command to run.
+
 ## First-run auto-setup
 
 The first time the bot lands in a server (when it's added, or at startup if it's
@@ -85,10 +110,10 @@ Everything tunable lives in **`config.js`**:
   extend it to add more levels)
 
 `.env` holds secrets and IDs: `DISCORD_TOKEN`, `GUILD_ID`, optional
-`STAFF_ROLE_ID` (granted at the staff level), `FLAG_LOG_CHANNEL_ID` (mod log for
-flagged duplicates), `PAYOUT_ROLE_ID` (role pinged on `!withdraw`), and
-`PAYOUT_CHANNEL_ID` (channel where payout requests are posted — defaults to the
-ticket channel if blank).
+`STAFF_ROLE_ID`, `FLAG_LOG_CHANNEL_ID`, `PAYOUT_ROLE_ID`, `PAYOUT_CHANNEL_ID`
+(fallback ping target if auto-payout is off), and for auto-payout
+`DC_API_TOKEN` + `DC_FROM_ACCOUNT_ID` (see the Auto-payout section). All role/
+channel IDs are optional thanks to first-run auto-setup.
 
 ## Commands
 
@@ -99,7 +124,7 @@ ticket channel if blank).
 | `!ad` | in a ticket | Lists the currently running ads to copy and run in-game |
 | `!rewards` | in a ticket | Shows the level reward table + "you are here" |
 | `!balance` | in a ticket | Your balance, all-time total, ads, XP |
-| `!withdraw` | in a ticket | Request a payout: pings the payout role with a ready-to-paste `/pay <ign> <amount>` for staff to run in-game, then resets the balance |
+| `!withdraw` | in a ticket | **Auto-pays** the player in-game via the DC Treasury API (or, if no API token is set, pings staff with the command to run), then resets the balance |
 | `!close` | in a ticket | Close the ticket (owner or staff) |
 | `!help` | in a ticket | Lists commands |
 

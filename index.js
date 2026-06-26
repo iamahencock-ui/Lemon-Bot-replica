@@ -22,6 +22,7 @@ import { levelForXp } from "./levels.js";
 import { dhash, imageMeta, findDuplicate } from "./hashing.js";
 import { ocrText, checkFullScreen, bestAdMatch, ignPresent } from "./verify.js";
 import { ensureGuildSetup } from "./setup.js";
+import { payoutEnabled, payPlayer, initPayout } from "./payout.js";
 import {
   adEmbed,
   rewardsEmbed,
@@ -79,6 +80,7 @@ function gcfg(guildId, key) {
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`Logged in as ${c.user.tag}`);
+  initPayout();
   // Provision any servers the bot is already in but hasn't set up yet.
   for (const guild of c.guilds.cache.values()) {
     await ensureGuildSetup(guild, c).catch((e) =>
@@ -576,8 +578,30 @@ async function handleCommand(msg, cmd, rest) {
     }
     const amount = user.balance;
     const ign = user.ign;
-    store.withdraw(msg.author.id);
 
+    // Auto-pay via the DC Treasury API if a token is configured.
+    if (payoutEnabled()) {
+      await msg.channel.sendTyping().catch(() => {});
+      const memo = config.payoutMemo.replace("{ign}", ign);
+      const result = await payPlayer(ign, amount, memo);
+      if (result.ok) {
+        store.withdraw(msg.author.id); // only debit on confirmed success
+        return msg.reply(
+          `✅ Paid **${money(amount)}** to **${ign}** in-game! ` +
+            (result.txnId ? `(txn #${result.txnId})` : "")
+        );
+      }
+      // Failure: leave the balance intact so nothing is lost.
+      console.error("payout failed:", result);
+      return msg.reply(
+        `⚠️ Payout failed: \`${result.error}\`${
+          result.message ? ` — ${result.message}` : ""
+        }.\nYour balance is **unchanged**. Try again shortly or contact staff.`
+      );
+    }
+
+    // No API token → fall back to pinging staff with the command to run.
+    store.withdraw(msg.author.id);
     const payoutRoleId = gcfg(msg.guild.id, "payoutRoleId");
     const payoutChannelId = gcfg(msg.guild.id, "payoutChannelId");
     const ping = payoutRoleId ? `<@&${payoutRoleId}> ` : "";

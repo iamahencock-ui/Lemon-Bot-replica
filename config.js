@@ -70,9 +70,12 @@ export const config = {
   remindWhenCooldownEnds: true,
 
   // --- Payouts --------------------------------------------------------------
-  // A bot can't run another bot's slash command, so !withdraw posts the exact
-  // command for a human to run. This matches the @server bot's /pay syntax
-  // (pay a Minecraft player by username + amount). {ign} and {amount} are filled in.
+  // If a DC Treasury API token is configured (DC_API_TOKEN), !withdraw pays the
+  // advertiser automatically in-game. This memo is attached to the transfer.
+  payoutMemo: "Lemonade ad payout for {ign}",
+
+  // Fallback when NO API token is set: !withdraw instead posts this command for
+  // a human to run. {ign}/{amount} are filled in.
   payoutBotName: "@server",
   payoutCommandHint: "/pay player:{ign} amount:{amount}",
 };
