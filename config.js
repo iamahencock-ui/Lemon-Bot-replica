@@ -44,6 +44,13 @@ export const config = {
   // forgiven via a small edit-distance allowance.
   adMatchThreshold: 0.6,
   adWordMinLen: 3, // ignore tiny words ("or", "at") when matching
+
+  // OCR is memory- and CPU-heavy. Process at most this many at once and queue
+  // the rest, so a burst of submissions can't crash a small host. On a ~512MB–
+  // 1GB box keep concurrency at 1. maxQueue caps how many wait before the bot
+  // tells extra submitters it's busy (bounds memory).
+  ocrConcurrency: 1,
+  ocrMaxQueue: 50,
   // Require the submitter's IGN to also appear in the screenshot. OFF by
   // default: usernames are small/low-contrast and the most error-prone thing
   // for OCR, so requiring them causes false rejections. The ad-text match,

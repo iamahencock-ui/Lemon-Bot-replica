@@ -8,11 +8,26 @@
 // ---------------------------------------------------------------------------
 import { createWorker } from "tesseract.js";
 import sharp from "sharp";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { mkdirSync } from "node:fs";
+
+// Keep sharp lightweight on small hosts: no operation cache, single thread.
+sharp.cache(false);
+sharp.concurrency(1);
+
+// Persist Tesseract's downloaded language data on the data volume so it isn't
+// re-downloaded on every restart (saves startup time + bandwidth on free hosts).
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TESS_CACHE = join(process.env.DATA_DIR || __dirname, ".tesseract-cache");
+mkdirSync(TESS_CACHE, { recursive: true });
 
 // One reused OCR worker for the life of the process.
 let workerPromise = null;
 function worker() {
-  if (!workerPromise) workerPromise = createWorker("eng");
+  if (!workerPromise) {
+    workerPromise = createWorker("eng", 1, { cachePath: TESS_CACHE });
+  }
   return workerPromise;
 }
 

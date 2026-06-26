@@ -153,6 +153,16 @@ export function noAdsEmbed() {
     .setDescription("There are no ads to run right now. Check back soon!");
 }
 
+// Too many submissions queued — ask the user to retry shortly.
+export function busyEmbed() {
+  return new EmbedBuilder()
+    .setColor(0xfee75c)
+    .setTitle("⏳ I'm a bit busy")
+    .setDescription(
+      "Lots of submissions are being checked right now. Wait a minute and post your screenshot again — your cooldown won't be affected."
+    );
+}
+
 // OCR failed to read the image at all.
 export function unreadableEmbed() {
   return new EmbedBuilder()

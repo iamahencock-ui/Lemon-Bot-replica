@@ -76,6 +76,38 @@ export async function payPlayer(playerName, amount, memo) {
   };
 }
 
+// Generic authenticated GET against the Treasury API.
+async function apiGet(path) {
+  const jwt = token();
+  if (!jwt) return { ok: false, error: "NO_TOKEN" };
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+  } catch (e) {
+    return { ok: false, error: "NETWORK", message: e.message };
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) return { ok: true, data };
+  return {
+    ok: false,
+    status: res.status,
+    error: data.error || `HTTP_${res.status}`,
+    message: data.message || "",
+  };
+}
+
+// What this token is (scope, firmId, personal accountId).
+export function whoAmI() {
+  return apiGet("/api/v1/auth/me");
+}
+
+// The firm's accounts (valid sources for DC_FROM_ACCOUNT_ID on a business key).
+export function listFirmAccounts() {
+  return apiGet("/api/v1/firms/me/accounts");
+}
+
 // Exchange the current token for a fresh one and persist it.
 export async function rotateToken() {
   const jwt = token();

@@ -4,6 +4,7 @@
 // All commands and submissions ONLY work inside ticket channels.
 // ---------------------------------------------------------------------------
 import "dotenv/config";
+import http from "node:http";
 import {
   Client,
   GatewayIntentBits,
@@ -22,7 +23,13 @@ import { levelForXp } from "./levels.js";
 import { dhash, imageMeta, findDuplicate } from "./hashing.js";
 import { ocrText, checkFullScreen, bestAdMatch, ignPresent } from "./verify.js";
 import { ensureGuildSetup } from "./setup.js";
-import { payoutEnabled, payPlayer, initPayout } from "./payout.js";
+import {
+  payoutEnabled,
+  payPlayer,
+  initPayout,
+  whoAmI,
+  listFirmAccounts,
+} from "./payout.js";
 import {
   adEmbed,
   rewardsEmbed,
@@ -31,6 +38,7 @@ import {
   adNotFoundEmbed,
   ignMissingEmbed,
   unreadableEmbed,
+  busyEmbed,
   adsListEmbed,
   noAdsEmbed,
   cooldownEmbed,
@@ -64,6 +72,35 @@ const isImage = (att) =>
   (att.contentType && att.contentType.startsWith("image/")) ||
   IMAGE_RE.test(att.name ?? "") ||
   IMAGE_RE.test(att.url.split("?")[0]);
+
+// Concurrency limiter: run at most `concurrency` heavy jobs at once, queue the
+// rest up to `maxQueue`, and reject beyond that (so memory stays bounded).
+function createLimiter(concurrency, maxQueue) {
+  let active = 0;
+  const q = [];
+  const runNext = () => {
+    if (active >= concurrency || q.length === 0) return;
+    active++;
+    q.shift()();
+  };
+  return {
+    pending: () => q.length,
+    async run(fn) {
+      if (q.length >= maxQueue) throw new Error("QUEUE_FULL");
+      await new Promise((res) => {
+        q.push(res);
+        runNext();
+      });
+      try {
+        return await fn();
+      } finally {
+        active--;
+        runNext();
+      }
+    },
+  };
+}
+const ocrLimiter = createLimiter(config.ocrConcurrency, config.ocrMaxQueue);
 
 // Resolve a setting: per-guild config (from auto-setup) first, .env fallback.
 const ENV_FALLBACK = {
@@ -329,6 +366,7 @@ const ADMIN_COMMANDS = new Set([
   "listads",
   // maintenance
   "clearcache",
+  "payoutinfo",
 ]);
 
 const money = (n) => `${config.currencySymbol}${n.toLocaleString()}`;
@@ -359,11 +397,49 @@ async function handleAdmin(msg, cmd, rest) {
         "",
         "**Maintenance:**",
         `\`${config.prefix}clearcache\` — clear the duplicate-screenshot cache (add \`@user\` for just one person)`,
+        `\`${config.prefix}payoutinfo\` — show your DC token scope + the account ids you can pay from`,
       ].join("\n")
     );
   }
 
   // --- Maintenance (no target user) ----------------------------------------
+  if (cmd === "payoutinfo") {
+    if (!payoutEnabled()) {
+      return msg.reply(
+        "No DC API token is set. Add `DC_API_TOKEN` to `.env` (issue one in-game with `/treasuryapi business issue`)."
+      );
+    }
+    const me = await whoAmI();
+    if (!me.ok) {
+      return msg.reply(
+        `Couldn't read the token: \`${me.error}\`${me.message ? ` — ${me.message}` : ""}. It may be expired — re-issue with \`/treasuryapi … issue\`.`
+      );
+    }
+    const lines = [
+      `🔑 Token scope: **${me.data.keyType}**` +
+        (me.data.firmId ? ` · firm #${me.data.firmId}` : "") +
+        (me.data.accountId ? ` · personal acct #${me.data.accountId}` : ""),
+    ];
+    if (me.data.keyType === "BUSINESS") {
+      const acc = await listFirmAccounts();
+      if (acc.ok && Array.isArray(acc.data)) {
+        lines.push("Pay **from** one of these — set its id as `DC_FROM_ACCOUNT_ID`:");
+        for (const a of acc.data) {
+          lines.push(
+            `• \`${a.accountId}\` — ${a.displayName || a.accountType} — bal ${config.currencySymbol}${a.balance}`
+          );
+        }
+      } else {
+        lines.push(`(couldn't list firm accounts: \`${acc.error || ""}\`)`);
+      }
+    } else {
+      lines.push(
+        "Personal token → leave `DC_FROM_ACCOUNT_ID` **blank**; payouts come from your personal account."
+      );
+    }
+    return msg.reply(lines.join("\n").slice(0, 1900));
+  }
+
   if (cmd === "clearcache") {
     const target = msg.mentions.users.first();
     if (target) {
@@ -562,10 +638,18 @@ async function handleCommand(msg, cmd, rest) {
   }
 
   if (cmd === "balance" || cmd === "bal") {
+    // Admins (Manage Server) can check another user by mentioning them.
+    const mentioned = msg.mentions.users.first();
+    const isStaff = msg.member?.permissions.has(PermissionFlagsBits.ManageGuild);
+    const target = mentioned && isStaff ? store.getUser(mentioned.id) : user;
+    const who = mentioned && isStaff ? `**${mentioned.username}** — ` : "";
+    if (mentioned && !isStaff) {
+      return msg.reply("You can only check your own balance.");
+    }
     return msg.reply(
-      `📊 Balance: **${config.currencySymbol}${user.balance.toLocaleString()}** · ` +
-        `All-time: ${config.currencySymbol}${user.all_time_total.toLocaleString()} · ` +
-        `Ads: ${user.total_ads} · XP: ${user.xp}`
+      `📊 ${who}Balance: **${config.currencySymbol}${target.balance.toLocaleString()}** · ` +
+        `All-time: ${config.currencySymbol}${target.all_time_total.toLocaleString()} · ` +
+        `Ads: ${target.total_ads} · XP: ${target.xp}`
     );
   }
 
@@ -678,6 +762,20 @@ async function handleSubmission(msg, att) {
     return msg.reply({ embeds: [cooldownEmbed(config.cooldownMs - elapsed)] });
   }
 
+  // Route the heavy work (image download + OCR) through a concurrency limiter
+  // so a burst of submissions can't exhaust memory and OOM-crash a small host.
+  try {
+    await ocrLimiter.run(() => processSubmission(msg, att, user, now));
+  } catch (err) {
+    if (err.message === "QUEUE_FULL") {
+      return msg.reply({ embeds: [busyEmbed()] });
+    }
+    console.error("submission error:", err);
+  }
+}
+
+// The heavy part: download, verify (full-screen → duplicate → OCR), reward.
+async function processSubmission(msg, att, user, now) {
   let buffer;
   try {
     const res = await fetch(att.url);
@@ -780,6 +878,21 @@ async function handleSubmission(msg, att) {
         .catch(() => {});
     }, config.cooldownMs);
   }
+}
+
+// Optional health endpoint. Some hosts (incl. panel-based ones like HeavenCloud)
+// allocate a port and expect something listening, and uptime monitors can ping
+// it. Binds only if a port is provided.
+const HEALTH_PORT = process.env.PORT || process.env.SERVER_PORT;
+if (HEALTH_PORT) {
+  http
+    .createServer((req, res) => {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("ok");
+    })
+    .listen(HEALTH_PORT, () =>
+      console.log(`Health server listening on :${HEALTH_PORT}`)
+    );
 }
 
 client.login(DISCORD_TOKEN);

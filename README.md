@@ -98,6 +98,37 @@ The bot is a long-running process, so it needs an always-on host. On
 
 Node 18+ is required; Railway uses a current Node by default.
 
+## Deploying to HeavenCloud (or similar panel hosts)
+
+HeavenCloud is a free, always-on, panel-based (Pterodactyl) host with ~715 MB
+RAM. The bot is tuned to fit:
+
+- **OCR is queued** — at most `ocrConcurrency` (default 1) screenshot runs at a
+  time, the rest wait up to `ocrMaxQueue`, and beyond that submitters are told
+  it's busy. This keeps memory bounded so a burst of submissions can't OOM the
+  container. `sharp` is also capped to one thread with caching off.
+- **OCR language data is cached** under `DATA_DIR/.tesseract-cache` so it's
+  downloaded once, not on every restart.
+
+Steps:
+
+1. Create a **Node.js** server/egg on the panel and pick **Node 18+**.
+2. Upload the project (zip it without `node_modules`, or point it at a Git repo).
+3. Set the **startup command** to `npm start` (the panel runs `npm install`
+   first).
+4. In the panel's **Variables/Environment**, add `DISCORD_TOKEN`, your
+   `DC_API_TOKEN` + `DC_FROM_ACCOUNT_ID` for payouts, and set `DATA_DIR` to a
+   path inside the persistent volume (the panel's file area persists across
+   restarts, so the default also works).
+5. Start it. If the panel assigns a port, the bot auto-binds a tiny health
+   endpoint on `PORT`/`SERVER_PORT` (returns `ok`), which also lets an uptime
+   monitor ping it.
+
+Capacity note: on ~715 MB, run OCR **one at a time** (the default). Throughput is
+roughly 15–30 screenshots/minute; a big backlog just queues and clears in order.
+If `npm install` fails on `sharp`, the container is likely musl/Alpine — pick a
+Debian/Ubuntu-based Node egg instead.
+
 ## Configuration
 
 Everything tunable lives in **`config.js`**:
