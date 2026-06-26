@@ -11,7 +11,7 @@ import {
   progressBar,
 } from "./levels.js";
 import { hammingDistance, dhash } from "./hashing.js";
-import { bestAdMatch } from "./verify.js";
+import { bestAdMatch, ignPresent } from "./verify.js";
 
 let pass = 0;
 const t = (name, fn) => {
@@ -121,6 +121,13 @@ t("tolerates OCR character errors", () => {
     "AD » BUY or SELL anything at LEM0NADE gps c244 CLOSE spawn bocks drops farm col0rs ores and MORE ~ Moski08";
   const m = bestAdMatch(ocr, sampleAds, { minWordLen: 3, threshold: 0.6 });
   assert.ok(m && m.ad.id === 1);
+});
+
+t("IGN found despite OCR character slips", () => {
+  // O->0, l->i look-alikes
+  assert.ok(ignPresent("AD » ... ~ Mosk1O8", "Moski08"));
+  assert.ok(ignPresent("blah ~ Moski08 blah", "Moski08"));
+  assert.equal(ignPresent("nothing relevant here", "Moski08"), false);
 });
 
 console.log("\nHashing:");

@@ -51,10 +51,35 @@ export function checkFullScreen(meta, config) {
   return { ok: true };
 }
 
-// Is the user's IGN visible in the screenshot text?
+// Common OCR character confusions, folded to one representative each, so an
+// IGN like "Moski08" still matches an OCR'd "Mosk1O8".
+const CONFUSE = { o: "0", l: "1", i: "1", s: "5", b: "8", z: "2", g: "9" };
+const canon = (s) =>
+  (s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .split("")
+    .map((c) => CONFUSE[c] ?? c)
+    .join("");
+
+// Is the user's IGN visible in the screenshot? Tolerant of OCR slips: folds
+// look-alike characters, then allows a small edit distance per word.
 export function ignPresent(text, ign) {
   if (!ign) return false;
-  return norm(text).includes(norm(ign));
+  const target = canon(ign);
+  if (!target) return false;
+  if (canon(text).includes(target)) return true; // fast path
+  const tol = target.length >= 6 ? 2 : 1;
+  const tokens = text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map(canon)
+    .filter(Boolean);
+  return tokens.some(
+    (t) => Math.abs(t.length - target.length) <= tol && lev(t, target) <= tol
+  );
 }
 
 // Levenshtein edit distance (small words only, so the simple DP is fine).
